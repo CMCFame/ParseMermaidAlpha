@@ -8,6 +8,19 @@ from parse_mermaid import parse_mermaid, MermaidParser
 from graph_to_ivr import graph_to_ivr
 from openai_converter import process_flow_diagram
 
+# Page configuration
+st.set_page_config(
+    page_title="Mermaid-to-IVR Converter",
+    page_icon="🔄",
+    layout="wide"
+)
+
+# Initialize session state - MOVED TO TOP
+if 'openai_key' not in st.session_state:
+    st.session_state['openai_key'] = ""
+if 'mermaid_code' not in st.session_state:
+    st.session_state['mermaid_code'] = ""
+
 # Constants
 DEFAULT_MERMAID = '''flowchart TD
     start["Start of call"]
@@ -27,18 +40,9 @@ DEFAULT_MERMAID = '''flowchart TD
     accept --> done
     decline --> done'''
 
-# Page configuration
-st.set_page_config(
-    page_title="Mermaid-to-IVR Converter",
-    page_icon="🔄",
-    layout="wide"
-)
-
-# Initialize session state
-if 'openai_key' not in st.session_state:
-    st.session_state.openai_key = None
-if 'mermaid_code' not in st.session_state:
-    st.session_state.mermaid_code = DEFAULT_MERMAID
+# Set initial mermaid code if not set
+if not st.session_state['mermaid_code']:
+    st.session_state['mermaid_code'] = DEFAULT_MERMAID
 
 def load_example_flows():
     """Load predefined example flows"""
@@ -112,13 +116,14 @@ def main():
     col1, col2 = st.columns([3, 2])
     
     with col1:
-        # OpenAI API Key
-        st.session_state.openai_key = st.text_input(
+        # OpenAI API Key input
+        openai_key = st.text_input(
             "OpenAI API Key",
-            value=st.session_state.openai_key if st.session_state.openai_key else "",
+            value=st.session_state['openai_key'],
             type="password",
             help="Required for file conversion"
         )
+        st.session_state['openai_key'] = openai_key
 
         # File uploader
         uploaded_file = st.file_uploader(
@@ -127,7 +132,7 @@ def main():
             help="Upload a flowchart diagram to convert to Mermaid"
         )
 
-        if uploaded_file and st.session_state.openai_key:
+        if uploaded_file and st.session_state['openai_key']:
             # Show file preview if it's an image
             if uploaded_file.type.startswith('image'):
                 st.image(uploaded_file, caption="Preview", use_column_width=True)
@@ -146,14 +151,14 @@ def main():
                         # Convert file using OpenAI
                         mermaid_code = process_flow_diagram(
                             temp_file_path,
-                            st.session_state.openai_key
+                            st.session_state['openai_key']
                         )
 
                         # Clean up
                         os.unlink(temp_file_path)
 
                         # Update session state
-                        st.session_state.mermaid_code = mermaid_code
+                        st.session_state['mermaid_code'] = mermaid_code
                         st.success("File converted successfully!")
 
                     except Exception as e:
@@ -163,7 +168,7 @@ def main():
         st.subheader("📝 Mermaid Editor")
         mermaid_text = st.text_area(
             "Mermaid Diagram",
-            value=st.session_state.mermaid_code if not selected_example or selected_example == "Custom" 
+            value=st.session_state['mermaid_code'] if not selected_example or selected_example == "Custom" 
                   else example_flows[selected_example],
             height=400
         )
