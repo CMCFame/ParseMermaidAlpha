@@ -46,13 +46,10 @@ class IVRTransformer:
         }
 
     def transform(self, graph: Dict) -> List[Dict[str, Any]]:
-        """
-        Transforms the parsed graph into a list of IVR nodes.
-        """
+        """Transforms the parsed graph into a list of IVR nodes."""
         nodes_dict = graph['nodes']
         edges = graph['edges']
         styles = graph.get('styles', {})
-        subgraphs = graph.get('subgraphs', {})
 
         ivr_nodes = []
         
@@ -75,9 +72,7 @@ class IVRTransformer:
         return ivr_nodes
 
     def _transform_node(self, node: Node, edges: List[Edge], styles: Dict) -> Optional[Dict]:
-        """
-        Transforms an individual node to IVR format.
-        """
+        """Transforms an individual node to IVR format."""
         node_id = node.id
         raw_text = node.raw_text
         node_type = node.node_type
@@ -87,11 +82,6 @@ class IVRTransformer:
             "label": self._to_title_case(node_id),
             "log": raw_text
         }
-
-        # Apply styles
-        for style_class in node.style_classes:
-            if style_class in styles:
-                self._apply_style(ivr_node, styles[style_class])
 
         # Handle decision nodes (rhombus)
         if node_type == NodeType.RHOMBUS:
@@ -105,9 +95,7 @@ class IVRTransformer:
         return ivr_node
 
     def _handle_decision_node(self, ivr_node: Dict, node: Node, edges: List[Edge]):
-        """
-        Sets up a decision node with getDigits and branch.
-        """
+        """Sets up a decision node with getDigits and branch."""
         out_edges = [e for e in edges if e.from_id == node.id]
         
         ivr_node["getDigits"] = {
@@ -141,9 +129,7 @@ class IVRTransformer:
         ivr_node["branch"] = branch_map
 
     def _handle_action_node(self, ivr_node: Dict, node: Node, edges: List[Edge]):
-        """
-        Sets up an action node with playPrompt and other commands.
-        """
+        """Sets up an action node with playPrompt and other commands."""
         out_edges = [e for e in edges if e.from_id == node.id]
         
         # Look for known audio prompt or use TTS
@@ -158,10 +144,7 @@ class IVRTransformer:
             ivr_node["goto"] = self._to_title_case(out_edges[0].to_id)
 
     def _add_special_commands(self, ivr_node: Dict, raw_text: str):
-        """
-        Adds special commands based on node text.
-        """
-        # Detect gosub commands based on text
+        """Adds special commands based on node text."""
         text_lower = raw_text.lower()
         
         for key, (code, name) in self.result_codes.items():
@@ -182,9 +165,7 @@ class IVRTransformer:
             })
 
     def _find_audio_prompt(self, text: str) -> Optional[str]:
-        """
-        Searches for a matching audio prompt.
-        """
+        """Searches for a matching audio prompt."""
         # Try exact match first
         if text in AUDIO_PROMPTS:
             return AUDIO_PROMPTS[text]
@@ -198,29 +179,11 @@ class IVRTransformer:
         return None
 
     @staticmethod
-    def _apply_style(ivr_node: Dict, style: str):
-        """
-        Applies Mermaid styles to IVR node.
-        """
-        style_parts = style.split(',')
-        for part in style_parts:
-            if 'fill' in part:
-                # Fill styles could map to different behaviors
-                pass
-            if 'stroke' in part:
-                # Border styles could map to different behaviors
-                pass
-
-    @staticmethod
     def _to_title_case(s: str) -> str:
-        """
-        Converts strings like 'node_id' to 'Node Id'.
-        """
+        """Converts strings like 'node_id' to 'Node Id'."""
         return ' '.join(word.capitalize() for word in s.replace('_', ' ').split())
 
 def graph_to_ivr(graph: Dict) -> List[Dict[str, Any]]:
-    """
-    Wrapper function to maintain compatibility with existing code.
-    """
+    """Wrapper function to maintain compatibility with existing code."""
     transformer = IVRTransformer()
     return transformer.transform(graph)
